@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<input id="input" type="text">
+        <div id="result"></div>
+        <script type="text/javascript">
+            var Render = {
+                init: function(element, store){
+                    this.element = element;
+                    this.store = store;
+                    window.addEventListener('render-view', this);
+                },
+
+                handleEvent: function(e){
+                    switch(e.type){
+                        case 'render-view':
+                            this.element.textContent = this.store.get();
+                            console.timeEnd("[diff] input vs render");
+                        break;
+                    }
+                }
+            };
+
+            function Store() {
+                this._data = 0;
+            }
+
+            Store.prototype = {
+                init: function(){
+                    window.addEventListener('set-store',this);
+                },
+
+                handleEvent: function(e){
+                    switch(e.type){
+                        case 'set-store':
+                            this.set(e.detail.val);
+                        break;
+                    }
+                },
+
+                get: function (val) {
+                    return this._data;
+                },
+
+                set: function(val) {
+                    this._data = val;
+                    window.dispatchEvent(new CustomEvent('render-view'));
+                }
+            };
+
+            var Dispatcher = {
+                init: function(){
+                    var self = this;
+
+                    "keydown keyup input".split(" ").forEach(function(e){
+                        window.addEventListener(e, self);
+                    });
+
+                    this.store = new Store();
+                    this.store.init();
+
+                    this.resultElem = document.getElementById('result');
+                    this.inputElem = document.getElementById('input');
+
+                    Render.init(this.resultElem, this.store);
+                },
+
+                handleEvent: function(e){
+                    switch(e.type){
+                        case 'input':
+                            switch (e.target) {
+                                case this.inputElem:
+                                    console.time("[diff] input vs render");
+                                    window.dispatchEvent(
+                                        new CustomEvent('set-store', {
+                                            detail: {
+                                                val: e.target.value
+                                            }
+                                        })
+                                    );
+                                break;
+                            }
+                        break;
+                    }
+                }
+            };
+
+            Dispatcher.init();
+        </script>
+	</body>
+</html>
